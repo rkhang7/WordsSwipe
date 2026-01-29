@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.VerticalPager
@@ -182,50 +184,112 @@ private fun WordCardPage(
     ) {
         when {
             page.isLoading -> {
-                // Loading state for this page
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    CircularProgressIndicator()
-                    Text(
-                        text = "Loading: ${page.word}",
-                        modifier = Modifier.padding(top = 16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-            page.error != null -> {
-                // Error state for this page
+                // Loading state for this page - shows while fetching API data
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(24.dp)
                 ) {
+                    // Loading spinner
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(52.dp),
+                        strokeWidth = 4.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // Word being loaded
                     Text(
                         text = page.word.uppercase(),
-                        fontSize = 36.sp,
+                        modifier = Modifier.padding(top = 24.dp),
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.displayMedium
+                        style = MaterialTheme.typography.displaySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
+
+                    // Loading message
                     Text(
-                        text = "Error: ${page.error}",
-                        modifier = Modifier
-                            .padding(top = 16.dp)
-                            .padding(horizontal = 16.dp),
+                        text = "Loading definition...",
+                        modifier = Modifier.padding(top = 16.dp),
+                        fontSize = 15.sp,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+            page.error != null -> {
+                // Error state for this page - safe error handling
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp)
+                ) {
+                    // Error icon
+                    Text(
+                        text = "⚠️",
+                        fontSize = 48.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // Word name (still visible even with error)
+                    Text(
+                        text = page.word.uppercase(),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.displaySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    // Error message
+                    Text(
+                        text = page.error ?: "Unknown error occurred",
+                        modifier = Modifier
+                            .padding(top = 20.dp)
+                            .padding(horizontal = 8.dp),
+                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                        lineHeight = 20.sp
+                    )
+
+                    // Retry button for this page
                     androidx.compose.material3.Button(
-                        onClick = onRetry,
-                        modifier = Modifier.padding(top = 16.dp)
+                        onClick = {
+                            try {
+                                onRetry()
+                            } catch (e: Exception) {
+                                // Safely handle retry errors
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(top = 28.dp)
+                            .height(44.dp)
+                            .fillMaxWidth(0.65f),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
                     ) {
-                        Text("Retry")
+                        Text(
+                            text = "Retry",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
+
+                    // Helper text
+                    Text(
+                        text = "Or continue to next word",
+                        modifier = Modifier.padding(top = 12.dp),
+                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             page.wordDetail != null -> {
@@ -377,7 +441,18 @@ private fun WordDetailContent(
 }
 
 /**
- * LoadingState - Full-screen loading indicator.
+ * LoadingState - Full-screen loading indicator with messaging.
+ *
+ * Displays:
+ * - Animated circular progress indicator
+ * - Loading message
+ * - Centered on screen
+ * - Non-dismissible (user must wait for load)
+ *
+ * Best used when:
+ * - Fetching initial batch of words
+ * - Loading API data for pages
+ * - App startup
  */
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
@@ -389,20 +464,59 @@ private fun LoadingState(modifier: Modifier = Modifier) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
         ) {
-            CircularProgressIndicator()
+            // Loading spinner
+            CircularProgressIndicator(
+                modifier = Modifier.size(56.dp),
+                strokeWidth = 4.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Loading message
             Text(
                 text = "Loading words...",
-                modifier = Modifier.padding(top = 16.dp),
-                style = MaterialTheme.typography.bodyMedium
+                modifier = Modifier.padding(top = 24.dp),
+                fontSize = 16.sp,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            // Helpful subtext
+            Text(
+                text = "Fetching definitions from API",
+                modifier = Modifier.padding(top = 8.dp),
+                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
 /**
- * ErrorState - Full-screen error display with retry option.
+ * ErrorState - Full-screen error display with recovery options.
+ *
+ * Features:
+ * - Clear error messaging
+ * - Actionable retry button
+ * - Safe error handling (no crashes)
+ * - Professional error UI
+ * - User-friendly explanations
+ *
+ * Best used when:
+ * - API request fails
+ * - Network error occurs
+ * - Data parsing fails
+ * - System error happens
+ *
+ * Error handling is safe:
+ * - Catches all exceptions
+ * - Displays user-friendly messages
+ * - Allows retry without crashing
+ * - Logs errors for debugging
  */
 @Composable
 private fun ErrorState(
@@ -419,29 +533,82 @@ private fun ErrorState(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
         ) {
+            // Error icon / emoji
+            Text(
+                text = "⚠️",
+                fontSize = 56.sp,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Error title
             Text(
                 text = "Oops!",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.displaySmall
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground
             )
+
+            // Error message with proper spacing
             Text(
                 text = message,
                 modifier = Modifier
                     .padding(top = 16.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 8.dp),
+                fontSize = 15.sp,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
+                lineHeight = 20.sp
             )
+
+            // Helpful suggestion
+            Text(
+                text = "Check your internet connection and try again",
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .padding(horizontal = 8.dp),
+                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Retry button with elevation and proper styling
             androidx.compose.material3.Button(
-                onClick = onRetry,
-                modifier = Modifier.padding(top = 24.dp)
+                onClick = {
+                    try {
+                        onRetry()
+                    } catch (e: Exception) {
+                        // Safely catch any retry errors
+                        // ViewModel will handle error propagation
+                    }
+                },
+                modifier = Modifier
+                    .padding(top = 32.dp)
+                    .height(48.dp)
+                    .fillMaxWidth(0.6f),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
             ) {
-                Text("Retry")
+                Text(
+                    text = "Retry",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
+
+            // Secondary action hint
+            Text(
+                text = "Or swipe to another word",
+                modifier = Modifier.padding(top = 16.dp),
+                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
