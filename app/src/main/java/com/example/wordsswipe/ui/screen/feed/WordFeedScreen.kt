@@ -1,19 +1,20 @@
 package com.example.wordsswipe.ui.screen.feed
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +22,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -71,9 +74,6 @@ fun WordFeedScreen(
                     WordFeedPager(
                         pages = pages,
                         currentIndex = currentIndex,
-                        onIndexChanged = { newIndex ->
-                            // This handles swipe events through pager state changes
-                        },
                         onSwipeUp = { viewModel.swipeUp() },
                         onSwipeDown = { viewModel.swipeDown() },
                         onRetryPage = { index -> viewModel.retryPageLoading(index) }
@@ -104,7 +104,6 @@ fun WordFeedScreen(
 private fun WordFeedPager(
     pages: List<WordPage>,
     currentIndex: Int,
-    onIndexChanged: (Int) -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onRetryPage: (Int) -> Unit,
@@ -137,7 +136,6 @@ private fun WordFeedPager(
         if (pageIndex < pages.size) {
             WordCardPage(
                 page = pages[pageIndex],
-                pageIndex = pageIndex,
                 onRetry = { onRetryPage(pageIndex) }
             )
         }
@@ -173,7 +171,6 @@ private fun WordFeedPager(
 @Composable
 private fun WordCardPage(
     page: WordPage,
-    pageIndex: Int,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -254,15 +251,21 @@ private fun WordCardPage(
 }
 
 /**
- * WordDetailContent - Displays complete word information.
+ * WordDetailContent - Beautiful, minimalist word display.
  *
- * Layout (vertical, fullscreen):
- * 1. Word (large, bold)
- * 2. Phonetic (pronunciation)
- * 3. Meaning (part of speech + definitions)
- * 4. Example sentences
+ * Design Philosophy:
+ * - Vertical center alignment for focus
+ * - Minimalist aesthetic (TikTok-inspired)
+ * - Dark background / light text
+ * - Excellent typography hierarchy
+ * - No scrolling - fits entirely on one screen
  *
- * All content fits on one page without scrolling.
+ * Display Elements:
+ * 1. Word (primary focus - largest, bold)
+ * 2. Phonetic (pronunciation - secondary, muted)
+ * 3. Part of Speech (grammar tag - accent color)
+ * 4. Definition (main meaning - readable size)
+ * 5. Example (context sentence - subtle, italicized)
  */
 @Composable
 private fun WordDetailContent(
@@ -270,65 +273,103 @@ private fun WordDetailContent(
     wordDetail: WordDetail,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
     ) {
-        // Word
-        Text(
-            text = word.uppercase(),
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.displayLarge,
-            textAlign = TextAlign.Center
-        )
-
-        // Phonetic
-        if (!wordDetail.phonetic.isNullOrBlank()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // ===== WORD (Primary Focus) =====
             Text(
-                text = wordDetail.phonetic,
-                fontSize = 18.sp,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-
-        // First meaning and definition
-        if (wordDetail.meanings.isNotEmpty()) {
-            val firstMeaning = wordDetail.meanings.first()
-
-            // Part of speech (e.g., "noun", "verb")
-            Text(
-                text = firstMeaning.partOfSpeech,
-                fontSize = 16.sp,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 32.dp)
+                text = word.uppercase(),
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.displayLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = 1.sp,
+                lineHeight = 64.sp
             )
 
-            // First definition
-            if (firstMeaning.definitions.isNotEmpty()) {
-                val firstDef = firstMeaning.definitions.first()
+            // ===== PHONETIC (Pronunciation) =====
+            if (!wordDetail.phonetic.isNullOrBlank()) {
                 Text(
-                    text = firstDef.definition,
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = wordDetail.phonetic,
+                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 16.dp)
+                    fontStyle = FontStyle.Italic,
+                    modifier = Modifier.alpha(0.7f)
                 )
+            }
 
-                // Example sentence if available
-                if (!firstDef.example.isNullOrBlank()) {
+            // ===== MEANING SECTION =====
+            if (wordDetail.meanings.isNotEmpty()) {
+                val firstMeaning = wordDetail.meanings.first()
+
+                // Part of Speech Tag
+                Surface(
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                ) {
                     Text(
-                        text = "\"${firstDef.example}\"",
-                        fontSize = 14.sp,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        modifier = Modifier.padding(top = 16.dp)
+                        text = firstMeaning.partOfSpeech,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(
+                            horizontal = 12.dp,
+                            vertical = 6.dp
+                        ),
+                        style = MaterialTheme.typography.labelMedium
                     )
+                }
+
+                // Definition
+                if (firstMeaning.definitions.isNotEmpty()) {
+                    val firstDef = firstMeaning.definitions.first()
+
+                    Text(
+                        text = firstDef.definition,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        lineHeight = 26.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                    )
+
+                    // ===== EXAMPLE SENTENCE =====
+                    if (!firstDef.example.isNullOrBlank()) {
+                        Text(
+                            text = "\"${firstDef.example}\"",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Light,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontStyle = FontStyle.Italic,
+                            lineHeight = 20.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp)
+                                .alpha(0.8f)
+                        )
+                    }
                 }
             }
         }
