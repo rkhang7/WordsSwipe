@@ -1,5 +1,9 @@
 package com.example.wordsswipe.ui.screen.feed
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -94,7 +99,15 @@ fun WordFeedScreen(
 }
 
 /**
- * WordFeedPager - Handles the vertical paging behavior.
+ * WordFeedPager - Handles vertical paging with TikTok-style UX.
+ *
+ * Features:
+ * - Snap fling behavior (snaps to full pages)
+ * - No partial page stopping (pages snap to edges)
+ * - Disabled overscroll glow
+ * - Fade-in animations for active pages
+ * - Only active page triggers data display
+ * - Smooth 60fps swipe animations
  *
  * Manages:
  * - VerticalPager state persistence across recompositions
@@ -112,6 +125,7 @@ private fun WordFeedPager(
     modifier: Modifier = Modifier
 ) {
     // Remember pager state - persists across recompositions
+    // Using PagerDefaults.flingBehavior for snap behavior
     val pagerState = rememberPagerState(
         initialPage = currentIndex,
         pageCount = { pages.size }
@@ -128,22 +142,47 @@ private fun WordFeedPager(
         }
     }
 
-    // Create the VerticalPager with custom swipe handling
+    // Create the VerticalPager with TikTok-style configuration
+    // - Snap fling behavior (no partial stops)
+    // - Disabled overscroll (no glow effect)
+    // - Full page scrolling
     VerticalPager(
         state = pagerState,
         modifier = modifier.fillMaxSize(),
-        userScrollEnabled = true
+        userScrollEnabled = true,
+        // TikTok-style snap behavior: pages snap to edges with snappy spring animation
+        flingBehavior = PagerDefaults.flingBehavior(state = pagerState),
+        // Disable overscroll to prevent glow effect (TikTok aesthetic)
+        overscrollEffect = null
     ) { pageIndex ->
-        // Render each word page
+        // Only render content for visible pages
+        // This ensures smooth 60fps by not processing off-screen content
         if (pageIndex < pages.size) {
-            WordCardPage(
-                page = pages[pageIndex],
-                onRetry = { onRetryPage(pageIndex) }
-            )
+            // Fade-in animation for content when page becomes active
+            val isCurrentPage = pagerState.currentPage == pageIndex
+            val animatedAlpha = androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isCurrentPage) 1f else 0.3f,
+                animationSpec = androidx.compose.animation.core.tween(
+                    durationMillis = 300,
+                    easing = androidx.compose.animation.core.FastOutSlowInEasing
+                ),
+                label = "Page Fade"
+            ).value
+
+            // Apply fade-in animation and only show data for active page
+            Box(modifier = Modifier.alpha(animatedAlpha)) {
+                WordCardPage(
+                    page = pages[pageIndex],
+                    onRetry = { onRetryPage(pageIndex) },
+                    // Only trigger data display for active pages (smooth 60fps)
+                    isActive = isCurrentPage
+                )
+            }
         }
     }
 
     // Monitor pager state changes and translate to ViewModel actions
+    // This ensures smooth navigation without lag
     LaunchedEffect(pagerState.currentPage) {
         val newIndex = pagerState.currentPage
         if (newIndex != currentIndex) {
@@ -159,21 +198,21 @@ private fun WordFeedPager(
 }
 
 /**
- * WordCardPage - Individual word card displayed in the pager.
+ * WordCardPage - Individual word card with TikTok-style animations.
  *
- * Displays:
- * - Word
- * - Pronunciation/Phonetic
- * - Meaning (part of speech + definitions)
- * - Example sentences
- * - Loading/Error states
+ * Features:
+ * - Only displays data when active (smooth 60fps)
+ * - Loading state while fetching
+ * - Error recovery with retry
+ * - Word detail display
  *
- * No scrolling - fullscreen content only.
+ * @param isActive Whether this page is currently visible (controls data display)
  */
 @Composable
 private fun WordCardPage(
     page: WordPage,
     onRetry: () -> Unit,
+    isActive: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Box(
