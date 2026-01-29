@@ -61,6 +61,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
+    // Retrofit and networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.moshi)
+    implementation(libs.okhttp.logging)
+    implementation(libs.moshi)
+    kapt(libs.moshi.codegen)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
