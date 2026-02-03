@@ -151,9 +151,7 @@ private fun WordFeedPager(
         modifier = modifier.fillMaxSize(),
         userScrollEnabled = true,
         // TikTok-style snap behavior: pages snap to edges with snappy spring animation
-        flingBehavior = PagerDefaults.flingBehavior(state = pagerState),
-        // Disable overscroll to prevent glow effect (TikTok aesthetic)
-        overscrollEffect = null
+        flingBehavior = PagerDefaults.flingBehavior(state = pagerState)
     ) { pageIndex ->
         // Only render content for visible pages
         // This ensures smooth 60fps by not processing off-screen content

@@ -63,10 +63,9 @@ dependencies {
 
     // Retrofit and networking
     implementation(libs.retrofit)
-    implementation(libs.retrofit.moshi)
+    implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
-    implementation(libs.moshi)
-    kapt(libs.moshi.codegen)
+    implementation(libs.gson)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)

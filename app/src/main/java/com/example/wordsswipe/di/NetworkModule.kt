@@ -1,8 +1,7 @@
 package com.example.wordsswipe.di
 
 import com.example.wordsswipe.data.remote.api.DictionaryApi
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 /**
@@ -18,7 +17,7 @@ import javax.inject.Singleton
  *
  * Provides:
  * - OkHttpClient with logging interceptor
- * - Moshi JSON adapter factory
+ * - Gson JSON adapter
  * - Retrofit instance configured for Dictionary API
  * - DictionaryApi service interface
  */
@@ -29,14 +28,11 @@ object NetworkModule {
     private const val DICTIONARY_API_BASE_URL = "https://api.dictionaryapi.dev/api/v2/"
 
     /**
-     * Provides Moshi instance for JSON serialization/deserialization.
-     * Includes KotlinJsonAdapterFactory for proper Kotlin support.
+     * Provides Gson instance for JSON serialization/deserialization.
      */
     @Provides
     @Singleton
-    fun provideMoshi(): Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
+    fun provideGson(): Gson = Gson()
 
     /**
      * Provides OkHttpClient with logging interceptor for debugging.
@@ -56,16 +52,16 @@ object NetworkModule {
 
     /**
      * Provides Retrofit instance configured for Dictionary API.
-     * Uses Moshi for JSON conversion and OkHttpClient for HTTP operations.
+     * Uses Gson for JSON conversion and OkHttpClient for HTTP operations.
      */
     @Provides
     @Singleton
     fun provideRetrofit(
-        moshi: Moshi,
+        gson: Gson,
         okHttpClient: OkHttpClient
     ): Retrofit = Retrofit.Builder()
         .baseUrl(DICTIONARY_API_BASE_URL)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .client(okHttpClient)
         .build()
 
